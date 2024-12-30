@@ -13,12 +13,21 @@ struct ResponsePayload {
     status: String,
 }
 
+fn is_valid_agent_name(s: &str) -> bool {
+    // Check if all characters in the string are either alphabetic, numeric, or a dash
+    s.chars().all(|c| c.is_alphanumeric() || c == '-')
+}
+
 async fn handle_request(payload: RequestPayload) -> Result<impl warp::Reply, warp::Rejection> {
     match payload.action.as_str() {
         "delete" => {
             if let Some(agent_name) = payload.agent_name {
-                let result = delete_agent(&agent_name).await;
-                Ok(warp::reply::json(&ResponsePayload { status: result }))
+                if is_valid_agent_name(&agent_name) {
+                    let result = delete_agent(&agent_name).await;
+                    Ok(warp::reply::json(&ResponsePayload { status: result }))
+                } else {
+                    Ok(warp::reply::json(&ResponsePayload { status: "invalid agent name".to_string() }))
+                }
             } else {
                 Ok(warp::reply::json(&ResponsePayload { status: "agent_name is required for delete action".to_string() }))
             }
